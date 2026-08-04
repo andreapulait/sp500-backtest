@@ -13,6 +13,8 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    // gli script in scripts/ girano con tsx e importano con estensione esplicita
+    "allowImportingTsExtensions": true,
     "plugins": [
       {
         "name": "next"

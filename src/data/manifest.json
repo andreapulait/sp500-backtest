@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-08-04T19:49:00.451Z",
+  "series": [
+    {
+      "symbol": "SPX",
+      "label": "S&P 500 Index",
+      "bars": 24764,
+      "from": "1927-12-30",
+      "to": "2026-08-04"
+    },
+    {
+      "symbol": "SPY",
+      "label": "SPDR S&P 500 ETF",
+      "bars": 8435,
+      "from": "1993-01-29",
+      "to": "2026-08-04"
+    },
+    {
+      "symbol": "NDX",
+      "label": "Nasdaq 100 Index",
+      "bars": 10289,
+      "from": "1985-10-01",
+      "to": "2026-08-04"
+    },
+    {
+      "symbol": "VIX",
+      "label": "CBOE Volatility Index",
+      "bars": 9215,
+      "from": "1990-01-02",
+      "to": "2026-08-04"
+    }
+  ]
+}

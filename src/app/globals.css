@@ -1,26 +1,153 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #fbfbfa;
+  --panel: #ffffff;
+  --panel-alt: #f4f4f2;
+  --line: #e2e2de;
+  --line-strong: #c9c9c3;
+  --text: #16161a;
+  --muted: #6b6b73;
+  --faint: #9a9aa2;
+  --accent: #1f5fbf;
+  --accent-soft: #e6eefb;
+  --up: #b4531a;
+  --down: #1f5fbf;
+  --ok: #2f6b3a;
+  --warn: #8a6a12;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0d0d0f;
+    --panel: #141417;
+    --panel-alt: #1b1b1f;
+    --line: #26262b;
+    --line-strong: #3a3a42;
+    --text: #e8e8ea;
+    --muted: #9494a0;
+    --faint: #64646e;
+    --accent: #6ea8fe;
+    --accent-soft: #17233a;
+    --up: #e8935c;
+    --down: #6ea8fe;
+    --ok: #6fbf7f;
+    --warn: #d6b45c;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-alt: var(--panel-alt);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* I numeri devono incolonnarsi: tabellari ovunque. */
+.num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+}
+
+.field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.field:disabled {
+  color: var(--faint);
+  background: var(--panel-alt);
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  appearance: textfield;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.seg {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+}
+
+.seg > button {
+  flex: 1;
+  padding: 5px 6px;
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seg > button:last-child {
+  border-right: none;
+}
+
+.seg > button:hover {
+  color: var(--text);
+  background: var(--panel-alt);
+}
+
+.seg > button[data-on="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+::selection {
+  background: var(--accent-soft);
 }

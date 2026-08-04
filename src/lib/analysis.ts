@@ -1,0 +1,166 @@
+import type { AnchorMode, SigmaSource } from "./backtest/types";
+import type { BreachCurvePoint, Distribution, GroupStats, HistogramBin } from "./backtest/stats";
+
+export type SamplingKind = "overlapping" | "disjoint" | "weekday";
+
+/**
+ * Richiesta di analisi.
+ *
+ * I BEP viaggiano come distanza percentuale con segno rispetto allo spot
+ * (es. -0.012 e +0.012). E' la forma canonica: l'utente li inserisce in punti,
+ * in percentuale o in sigma sullo spot di oggi, e l'interfaccia converte.
+ * Il backtest riapplica quella percentuale allo spot di ogni finestra storica.
+ */
+export type AnalysisRequest = {
+  symbol: string;
+  days: number;
+  bepLowPct: number;
+  bepHighPct: number;
+  sigmaSource: SigmaSource;
+  sampling: SamplingKind;
+  /** usato solo con sampling "weekday": 1 = lunedi ... 5 = venerdi */
+  weekday: number;
+  from?: string;
+  to?: string;
+};
+
+export type SymbolMeta = {
+  symbol: string;
+  label: string;
+  derived: boolean;
+  bars: number;
+  dataFrom: string;
+  dataTo: string;
+  /** ultimo close disponibile, usato come spot di riferimento */
+  spot: number;
+  spotDate: string;
+  /** sigma annualizzato corrente per le due fonti; null se non disponibile */
+  realizedVolAnnual: number | null;
+  vixAnnual: number | null;
+};
+
+export type WorstRow = {
+  entryDate: string;
+  exitDate: string;
+  s0: number;
+  sT: number;
+  retPct: number;
+  breachPct: number;
+  direction: "up" | "down";
+  vixAnnual: number | null;
+};
+
+export type AnchorPayload = {
+  anchor: AnchorMode;
+  n: number;
+  skipped: number;
+  insideRate: number;
+  breachUpRate: number;
+  breachDownRate: number;
+  neverTouchedRate: number;
+  touchedRate: number;
+  touchedButReturnedRate: number;
+  breachAll: Distribution | null;
+  breachUp: Distribution | null;
+  breachDown: Distribution | null;
+  margin: Distribution | null;
+  excursionUp: Distribution | null;
+  excursionDown: Distribution | null;
+  avgRangeWidthPct: number;
+  unreachableLowerCount: number;
+  byYear: GroupStats[];
+  byVix: GroupStats[];
+  worst: WorstRow[];
+};
+
+export type AnalysisResponse = {
+  meta: SymbolMeta;
+  /** BEP di riferimento risolti sullo spot attuale, nelle tre rappresentazioni */
+  reference: {
+    lowPoints: number;
+    highPoints: number;
+    lowPct: number;
+    highPct: number;
+    lowSd: number;
+    highSd: number;
+    sigmaN: number;
+    sigmaAnnual: number;
+    sigmaSource: SigmaSource;
+  };
+  diagnostics: {
+    totalWindows: number;
+    firstEntry: string | null;
+    lastEntry: string | null;
+    effectiveIndependentWindows: number;
+    exitsBeyondRange: number;
+  };
+  anchors: Record<AnchorMode, AnchorPayload>;
+  /** distribuzione dei rendimenti a scadenza, indipendente dall'ancoraggio */
+  histogram: HistogramBin[];
+  returns: Distribution | null;
+  curve: BreachCurvePoint[];
+};
+
+export const DEFAULT_REQUEST: AnalysisRequest = {
+  symbol: "SPX",
+  days: 5,
+  bepLowPct: -0.012,
+  bepHighPct: 0.012,
+  sigmaSource: "realized",
+  sampling: "overlapping",
+  weekday: 1,
+};
+
+export type Preset = {
+  id: string;
+  label: string;
+  hint?: string;
+  /** null = dall'inizio dei dati */
+  from: (dataFrom: string, dataTo: string) => string | undefined;
+};
+
+const yearsBefore = (iso: string, years: number) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCFullYear(d.getUTCFullYear() - years);
+  return d.toISOString().slice(0, 10);
+};
+
+export const PRESETS: Preset[] = [
+  { id: "all", label: "Tutta la storia", from: () => undefined },
+  { id: "20y", label: "Ultimi 20 anni", from: (_f, t) => yearsBefore(t, 20) },
+  { id: "10y", label: "Ultimi 10 anni", from: (_f, t) => yearsBefore(t, 10) },
+  { id: "5y", label: "Ultimi 5 anni", from: (_f, t) => yearsBefore(t, 5) },
+  { id: "3y", label: "Ultimi 3 anni", from: (_f, t) => yearsBefore(t, 3) },
+  { id: "1y", label: "Ultimo anno", from: (_f, t) => yearsBefore(t, 1) },
+  { id: "gfc", label: "Post crisi 2008", hint: "dal minimo del 9 marzo 2009", from: () => "2009-03-09" },
+  { id: "covid", label: "Da inizio Covid", hint: "dal massimo pre-crollo del 19 febbraio 2020", from: () => "2020-02-19" },
+  { id: "trump2", label: "Da insediamento Trump", hint: "dal 20 gennaio 2025", from: () => "2025-01-20" },
+];
+
+export const SAMPLING_LABELS: Record<SamplingKind, { label: string; hint: string }> = {
+  overlapping: {
+    label: "Sovrapposte",
+    hint: "Una finestra per ogni giorno di borsa. Massimo dettaglio, ma finestre consecutive condividono N−1 giorni.",
+  },
+  disjoint: {
+    label: "Non sovrapposte",
+    hint: "Una finestra ogni N giorni. Molte meno osservazioni, ma statisticamente indipendenti.",
+  },
+  weekday: {
+    label: "Giorno fisso",
+    hint: "Solo ingressi in un giorno preciso della settimana, per replicare scadenze settimanali.",
+  },
+};
+
+export const WEEKDAY_LABELS = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+
+export const ANCHOR_LABELS: Record<AnchorMode, { label: string; hint: string }> = {
+  pct: {
+    label: "Percentuale",
+    hint: "I BEP mantengono la stessa distanza percentuale dallo spot di ogni finestra. È l'ipotesi di riferimento.",
+  },
+  sigma: {
+    label: "Sigma",
+    hint: "I BEP mantengono la stessa distanza in deviazioni standard, ricalcolate su ogni finestra: in periodi volatili si allargano da soli.",
+  },
+};
