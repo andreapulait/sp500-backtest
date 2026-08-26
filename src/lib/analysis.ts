@@ -111,6 +111,45 @@ export const DEFAULT_REQUEST: AnalysisRequest = {
   weekday: 1,
 };
 
+/** Un intervallo temporale da confrontare nell'analisi dei gap. */
+export type PeriodSpec = {
+  label: string;
+  from?: string;
+  to?: string;
+};
+
+export type GapRequest = {
+  symbol: string;
+  a: PeriodSpec;
+  b: PeriodSpec;
+  /** estremi delle classi in frazione di prezzo; l'ultima e' aperta verso l'alto */
+  edges: number[];
+};
+
+/**
+ * Periodi predefiniti per il confronto. Sono espressi in date assolute perche'
+ * il confronto fra due archi temporali deve restare stabile nel tempo: un
+ * "ultimi 5 anni" relativo renderebbe irriproducibile un risultato citato.
+ */
+export const GAP_PERIODS: PeriodSpec[] = [
+  { label: "Tutta la storia" },
+  { label: "Dal 2000", from: "2000-01-01" },
+  { label: "1997–1999", from: "1997-01-01", to: "1999-12-31" },
+  { label: "2000–2009", from: "2000-01-01", to: "2009-12-31" },
+  { label: "2010–2019", from: "2010-01-01", to: "2019-12-31" },
+  { label: "2020–2024", from: "2020-01-01", to: "2024-12-31" },
+  { label: "Post crisi 2008", from: "2009-03-09" },
+  { label: "Da inizio Covid", from: "2020-02-19" },
+  { label: "Era Trump", from: "2025-01-20" },
+];
+
+export const DEFAULT_GAP_REQUEST: GapRequest = {
+  symbol: "SPY",
+  a: GAP_PERIODS[1],
+  b: GAP_PERIODS[8],
+  edges: [0, 0.001, 0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.03],
+};
+
 export type Preset = {
   id: string;
   label: string;

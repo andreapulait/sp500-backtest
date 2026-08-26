@@ -10,18 +10,59 @@ import {
   summarize,
   worstWindows,
 } from "@/lib/backtest/stats";
+import {
+  DEFAULT_GAP_EDGES,
+  computeGaps,
+  summarizeGaps,
+  type GapPeriodStats,
+} from "@/lib/backtest/gaps";
 import { ANCHOR_MODES, type AnchorMode, type Sampling } from "@/lib/backtest/types";
 import { getDataset, listSymbols } from "@/lib/data";
 import type {
   AnalysisRequest,
   AnalysisResponse,
   AnchorPayload,
+  GapRequest,
+  PeriodSpec,
   SymbolMeta,
   WorstRow,
 } from "@/lib/analysis";
 
 export async function getSymbols() {
   return listSymbols();
+}
+
+export type GapResponse = {
+  symbol: string;
+  label: string;
+  dataFrom: string;
+  dataTo: string;
+  a: GapPeriodStats;
+  b: GapPeriodStats;
+};
+
+/**
+ * Confronta la distribuzione dei gap di apertura fra due archi temporali.
+ *
+ * Lo strumento conta: l'open di un indice non e' un prezzo scambiato e
+ * comprime i gap. `identicalShare` in ogni periodo segnala quando la serie
+ * non ha open realmente rilevati.
+ */
+export async function runGapAnalysis(req: GapRequest): Promise<GapResponse> {
+  const { info, series } = await getDataset(req.symbol);
+  const edges = req.edges?.length ? req.edges : DEFAULT_GAP_EDGES;
+
+  const summarize = (p: PeriodSpec) =>
+    summarizeGaps(p.label, computeGaps(series, p.from, p.to), edges, p.from, p.to);
+
+  return {
+    symbol: info.symbol,
+    label: info.label,
+    dataFrom: series.date[0],
+    dataTo: series.date[series.date.length - 1],
+    a: summarize(req.a),
+    b: summarize(req.b),
+  };
 }
 
 /** Riga compatta per il confronto affiancato di piu' strategie. */

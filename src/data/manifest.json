@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T19:49:00.451Z",
+  "generatedAt": "2026-08-05T07:57:12.456Z",
   "series": [
     {
       "symbol": "SPX",
@@ -25,9 +25,9 @@
     {
       "symbol": "VIX",
       "label": "CBOE Volatility Index",
-      "bars": 9215,
+      "bars": 9216,
       "from": "1990-01-02",
-      "to": "2026-08-04"
+      "to": "2026-08-05"
     }
   ]
 }

@@ -18,6 +18,30 @@ definisce altrove; qui se ne testa la geometria.
 - **curva di sfondamento**: per ogni distanza, la frequenza storica di superarla
 - spaccati per **anno** e per **quintile di VIX** al giorno d'ingresso
 
+## Gap di apertura
+
+Seconda analisi, in `/gap`: distribuzione del gap fra la chiusura di una seduta e l'apertura della
+successiva, raggruppata per classi di ampiezza, con **due archi temporali a confronto**.
+
+**Lo strumento conta più del periodo.** L'apertura di un indice non è un prezzo scambiato: si
+calcola dai primi scambi dei componenti, e quelli non ancora aperti contribuiscono con la chiusura
+precedente. È una media fra prezzi nuovi e prezzi fermi, quindi comprime il gap per costruzione.
+
+Su SPX di Yahoo l'effetto è massiccio e **varia nel tempo**, il che rende i confronti fra epoche
+del tutto fuorvianti:
+
+| SPX | sedute con open identico al close precedente | \|gap\| medio |
+|---|---|---|
+| 1990–1999 | 76,7% | 0,00% |
+| 2000–2009 | 63,8% | 0,04% |
+| 2010–2019 | 6,2% | 0,14% |
+| 2020–oggi | ~0% | 0,39% |
+
+Su SPY, che è realmente scambiato, i gap risultano circa il 30% più ampi a parità di periodo, pur
+con correlazione 0,98 — non è una discrepanza, è la differenza fra riprezzamento reale e valore
+stampato dall'indice. Per questo **SPY è lo strumento predefinito** e ogni periodo espone la quota
+di aperture identiche come indicatore di qualità, con un avviso esplicito sopra il 2%.
+
 ## Come vengono ancorati i BEP
 
 I BEP si inseriscono in punti, in percentuale o in deviazioni standard sullo spot corrente: le tre

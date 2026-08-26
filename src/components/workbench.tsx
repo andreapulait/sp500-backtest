@@ -86,13 +86,9 @@ export function Workbench({
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-4">
       <header className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <div className="flex items-baseline gap-3">
-          <h1 className="text-[15px] font-medium">Range Backtest</h1>
-          <span className="text-[12px] text-[var(--muted)]">
-            quanto spesso il sottostante è rimasto entro i tuoi break-even, e di quanto li ha
-            superati
-          </span>
-        </div>
+        <h1 className="text-[13px] text-[var(--muted)]">
+          Quanto spesso il sottostante è rimasto entro i tuoi break-even, e di quanto li ha superati
+        </h1>
         <span className="num text-[11px] text-[var(--faint)]">
           {pending ? "calcolo…" : data ? `${count(data.diagnostics.totalWindows)} finestre` : ""}
         </span>
