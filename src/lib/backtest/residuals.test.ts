@@ -57,6 +57,41 @@ group("escursione residua", () => {
     expect(r3.residualSessions!.median).toBe(0);
   });
 
+  it("con riferimento all'estremo la fase che finisce li' ha residuo esattamente nullo", () => {
+    const byExtreme = buildResidualRows(s, legs, "up", "extreme");
+    const r3 = byExtreme.find((r) => r.atCount === 3)!;
+    expect(r3.residualPct!.median).toBe(0);
+    // le barre precedenti misurano la sola estensione oltre il massimo gia' fatto
+    expect(byExtreme.find((r) => r.atCount === 1)!.residualPct!.median).toBeCloseTo(
+      130 / 110 - 1,
+      12
+    );
+    expect(byExtreme.find((r) => r.atCount === 2)!.residualPct!.median).toBeCloseTo(
+      130 / 120 - 1,
+      12
+    );
+  });
+
+  it("il residuo dal massimo e' sempre minore di quello dalla chiusura", () => {
+    const byExtreme = buildResidualRows(s, legs, "up", "extreme");
+    for (const r of rows) {
+      const other = byExtreme.find((x) => x.atCount === r.atCount)!;
+      expect(other.residualPct!.median).toBeLessThan(r.residualPct!.median);
+    }
+  });
+
+  it("al ribasso il riferimento e' il minimo della barra", () => {
+    const down = makeSeries([
+      { h: 100, l: 90, c: 95 },
+      { h: 95, l: 80, c: 90 }, // minimo 1: low 80
+      { h: 92, l: 70, c: 75 }, // minimo 2: low 70, fondo
+      { h: 96, l: 76, c: 94 }, // massimo: chiude
+      { h: 99, l: 85, c: 97 },
+    ]);
+    const r = buildResidualRows(down, buildLegs(down), "down", "extreme");
+    expect(r.find((x) => x.atCount === 1)!.residualPct!.median).toBeCloseTo(70 / 80 - 1, 12);
+  });
+
   it("conta le sedute residue fino al top", () => {
     expect(rows.find((r) => r.atCount === 1)!.residualSessions!.median).toBe(2);
     expect(rows.find((r) => r.atCount === 2)!.residualSessions!.median).toBe(1);

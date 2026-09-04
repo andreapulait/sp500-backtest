@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { runResidualAnalysis, type ResidualResponse } from "@/app/actions";
-import type { ResidualBucket, ResidualRow } from "@/lib/backtest/residuals";
+import type {
+  ResidualBucket,
+  ResidualReference,
+  ResidualRow,
+} from "@/lib/backtest/residuals";
 import { count, pct, points as fmtPoints, shortDate } from "@/lib/format";
 
 const UP = "var(--up)";
@@ -162,6 +166,7 @@ export function ResidualPanel({
   outside: "flip" | "keep";
 }) {
   const [direction, setDirection] = useState<"up" | "down">("up");
+  const [reference, setReference] = useState<ResidualReference>("close");
   const [data, setData] = useState<ResidualResponse | null>(null);
   const [pending, setPending] = useState(true);
   const [openRows, setOpenRows] = useState<Set<number>>(new Set());
@@ -174,7 +179,7 @@ export function ResidualPanel({
     setPending(true);
 
     const timer = setTimeout(() => {
-      runResidualAnalysis({ symbol, from, to, outside, direction })
+      runResidualAnalysis({ symbol, from, to, outside, direction, reference })
         .then((res) => {
           if (seq.current !== id) return;
           setData(res);
@@ -185,10 +190,11 @@ export function ResidualPanel({
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [symbol, from, to, outside, direction]);
+  }, [symbol, from, to, outside, direction, reference]);
 
   const tone = direction === "up" ? UP : DOWN;
   const verb = direction === "up" ? "sale" : "scende";
+  const extremeWord = direction === "up" ? "massimo" : "minimo";
 
   const toggleRow = (n: number) =>
     setOpenRows((s) => {
@@ -211,13 +217,31 @@ export function ResidualPanel({
     <div className="panel p-3">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         <span className="label">Quanto {verb} ancora dopo l&apos;N-esimo estremo</span>
-        <div className="seg w-[240px]">
-          <button data-on={direction === "up"} onClick={() => setDirection("up")}>
-            Fasi di massimi
-          </button>
-          <button data-on={direction === "down"} onClick={() => setDirection("down")}>
-            Fasi di minimi
-          </button>
+        <div className="flex flex-wrap gap-2">
+          <div className="seg w-[250px]">
+            <button
+              data-on={reference === "close"}
+              onClick={() => setReference("close")}
+              title="Misura dalla chiusura della barra: include il recupero del ritracciamento intraday già avvenuto"
+            >
+              Dalla chiusura
+            </button>
+            <button
+              data-on={reference === "extreme"}
+              onClick={() => setReference("extreme")}
+              title={`Misura dal ${extremeWord} della barra: solo l'estensione oltre il livello già raggiunto`}
+            >
+              Dal {extremeWord}
+            </button>
+          </div>
+          <div className="seg w-[230px]">
+            <button data-on={direction === "up"} onClick={() => setDirection("up")}>
+              Fasi di massimi
+            </button>
+            <button data-on={direction === "down"} onClick={() => setDirection("down")}>
+              Fasi di minimi
+            </button>
+          </div>
         </div>
       </div>
 
@@ -263,16 +287,28 @@ export function ResidualPanel({
           </div>
 
           <p className="mt-2 text-[11px] leading-snug text-[var(--faint)]">
-            Il residuo è misurato dalla <strong>chiusura</strong> della barra che forma l&apos;N-esimo
-            estremo fino all&apos;estremo raggiunto dalla fase. Clicca una riga per aprire i casi
-            raggruppati per quanti altri estremi si sono formati, e un gruppo per vedere le
-            occorrenze reali.
+            {reference === "close" ? (
+              <>
+                Il residuo è misurato dalla <strong>chiusura</strong> della barra che forma
+                l&apos;N-esimo estremo: è il prezzo a cui potresti agire, quindi il numero include
+                anche il recupero del ritracciamento intraday già avvenuto su quella barra.
+              </>
+            ) : (
+              <>
+                Il residuo è misurato dal <strong>{extremeWord}</strong> della barra che forma
+                l&apos;N-esimo estremo: misura la sola estensione oltre il livello già raggiunto,
+                quindi le fasi che finiscono lì valgono esattamente zero. Non è un prezzo su cui
+                puoi operare, ma isola il movimento aggiuntivo.
+              </>
+            )}{" "}
+            Clicca una riga per aprire i casi raggruppati per quanti altri estremi si sono formati, e
+            un gruppo per vedere le occorrenze reali.
           </p>
           <p className="mt-1.5 text-[11px] leading-snug text-[var(--faint)]">
             Il campione include <strong>anche le fasi che si fermano a N</strong>: escluderle
-            condizionerebbe il calcolo alla prosecuzione e gonfierebbe il residuo. Per quelle il
-            residuo è solo la distanza fra chiusura e estremo della stessa barra, ed è il motivo per
-            cui la mediana è molto più bassa del p90.
+            condizionerebbe il calcolo alla prosecuzione e gonfierebbe il residuo. È il motivo per
+            cui la mediana è molto più bassa del p90. La differenza fra le due modalità è
+            esattamente la distanza fra chiusura e {extremeWord} della barra osservata.
           </p>
         </div>
       )}

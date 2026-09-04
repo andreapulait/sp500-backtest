@@ -16,7 +16,11 @@ import {
   summarizeGaps,
   type GapPeriodStats,
 } from "@/lib/backtest/gaps";
-import { buildResidualRows, type ResidualRow } from "@/lib/backtest/residuals";
+import {
+  buildResidualRows,
+  type ResidualReference,
+  type ResidualRow,
+} from "@/lib/backtest/residuals";
 import {
   buildLegs,
   extractSignals,
@@ -89,11 +93,14 @@ export type ResidualRequest = {
   to?: string;
   outside: "flip" | "keep";
   direction: "up" | "down";
+  /** da quale prezzo della barra osservata si misura il residuo */
+  reference: ResidualReference;
 };
 
 export type ResidualResponse = {
   symbol: string;
   direction: "up" | "down";
+  reference: ResidualReference;
   rows: ResidualRow[];
 };
 
@@ -109,7 +116,8 @@ export async function runResidualAnalysis(req: ResidualRequest): Promise<Residua
   return {
     symbol: info.symbol,
     direction: req.direction,
-    rows: buildResidualRows(series, legs, req.direction),
+    reference: req.reference,
+    rows: buildResidualRows(series, legs, req.direction, req.reference),
   };
 }
 

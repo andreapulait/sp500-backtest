@@ -6,20 +6,29 @@ import { describe, type Distribution } from "./stats";
  * Escursione residua: una volta formato l'N-esimo estremo consecutivo, quanto
  * si muove ancora il prezzo prima della fine della fase, e in quanto tempo.
  *
- * Il punto di osservazione e' la CHIUSURA della barra che forma l'N-esimo
- * estremo, perche' e' il momento in cui si potrebbe effettivamente agire.
+ * Il punto di osservazione e' scelto dal chiamante:
+ * - "close": la chiusura della barra che forma l'N-esimo estremo, cioe' il
+ *   momento in cui si potrebbe effettivamente agire. Il residuo include il
+ *   recupero del ritracciamento intraday gia' avvenuto su quella barra.
+ * - "extreme": il massimo (o minimo) della barra stessa. Misura la sola
+ *   estensione oltre il livello gia' raggiunto: le fasi che finiscono li'
+ *   hanno residuo esattamente zero.
  *
  * Nota metodologica decisiva: entrano nel campione anche le fasi che si
  * fermano esattamente a N. Escluderle condizionerebbe il calcolo alla
  * prosecuzione e gonfierebbe sistematicamente il residuo, facendo sembrare che
  * ci sia sempre altra strada davanti quando in quasi meta' dei casi non ce n'e'.
  */
+/** Da quale prezzo della barra osservata si misura il residuo. */
+export type ResidualReference = "close" | "extreme";
+
 export type ResidualSample = {
   legStart: string;
   /** data della barra che forma l'N-esimo estremo */
   observed: string;
   /** data della barra in cui la fase tocca il suo estremo */
   topDate: string;
+  /** prezzo di riferimento sulla barra osservata, secondo la modalita' scelta */
   refClose: number;
   topPrice: number;
   residualPct: number;
@@ -62,7 +71,8 @@ function collect(
   series: Series,
   legs: Leg[],
   direction: LegDirection,
-  atCount: number
+  atCount: number,
+  reference: ResidualReference
 ): ResidualSample[] {
   const out: ResidualSample[] = [];
 
@@ -72,7 +82,8 @@ function collect(
     if (leg.direction !== direction || leg.open || leg.count < atCount) continue;
 
     const i = leg.extremeIndices[atCount - 1];
-    const refClose = series.c[i];
+    const refClose =
+      reference === "close" ? series.c[i] : direction === "up" ? series.h[i] : series.l[i];
     if (!(refClose > 0)) continue;
 
     out.push({
@@ -116,6 +127,7 @@ export function buildResidualRows(
   series: Series,
   legs: Leg[],
   direction: LegDirection,
+  reference: ResidualReference = "close",
   maxCount = 12
 ): ResidualRow[] {
   const closed = legs.filter((l) => l.direction === direction && !l.open);
@@ -125,7 +137,7 @@ export function buildResidualRows(
   const rows: ResidualRow[] = [];
 
   for (let atCount = 1; atCount <= limit; atCount++) {
-    const samples = collect(series, closed, direction, atCount);
+    const samples = collect(series, closed, direction, atCount, reference);
     if (samples.length === 0) continue;
 
     const abs = samples.map((s) => Math.abs(s.residualPct));
