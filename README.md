@@ -42,6 +42,21 @@ con correlazione 0,98 — non è una discrepanza, è la differenza fra riprezzam
 stampato dall'indice. Per questo **SPY è lo strumento predefinito** e ogni periodo espone la quota
 di aperture identiche come indicatore di qualità, con un avviso esplicito sopra il 2%.
 
+## Fasi di massimi e minimi
+
+Terza analisi, in `/swing`: la serie viene segmentata in fasi alternate. Una fase rialzista conta le
+barre che formano un nuovo massimo (`high > high precedente`) e termina quando interviene una barra
+che forma un nuovo minimo; da lì parte la fase ribassista, e così via. Le barre interne — che non
+superano né il massimo né il minimo precedente — non contano e **non interrompono** la fase.
+
+Per ogni lunghezza di fase l'app riporta quante fasi la raggiungono, quante si fermano lì, e
+soprattutto la **probabilità di prosecuzione**: dato che siamo alla quarta barra, quante volte ne è
+arrivata una quinta. Su SPX dal 2000 emerge un'asimmetria netta — le fasi rialziste hanno lunghezza
+mediana 2 e proseguono nel 55% dei casi, quelle ribassiste mediana 1 e proseguono nel 46%.
+
+Un estrattore produce le **date ISO** in cui una fase raggiunge un conteggio scelto, con la
+condizione opzionale che la fase opposta precedente ne abbia raggiunte almeno altrettante.
+
 ## Come vengono ancorati i BEP
 
 I BEP si inseriscono in punti, in percentuale o in deviazioni standard sullo spot corrente: le tre

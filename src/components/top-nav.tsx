@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/", label: "Backtest range" },
   { href: "/gap", label: "Gap di apertura" },
+  { href: "/swing", label: "Fasi di massimi e minimi" },
 ];
 
 export function TopNav() {

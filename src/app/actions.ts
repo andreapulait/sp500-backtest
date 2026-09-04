@@ -16,6 +16,13 @@ import {
   summarizeGaps,
   type GapPeriodStats,
 } from "@/lib/backtest/gaps";
+import {
+  buildLegs,
+  extractSignals,
+  summarizeDirection,
+  type DirectionStats,
+  type Leg,
+} from "@/lib/backtest/swings";
 import { ANCHOR_MODES, type AnchorMode, type Sampling } from "@/lib/backtest/types";
 import { getDataset, listSymbols } from "@/lib/data";
 import type {
@@ -24,12 +31,55 @@ import type {
   AnchorPayload,
   GapRequest,
   PeriodSpec,
+  SwingRequest,
   SymbolMeta,
   WorstRow,
 } from "@/lib/analysis";
 
 export async function getSymbols() {
   return listSymbols();
+}
+
+export type SwingResponse = {
+  symbol: string;
+  label: string;
+  dataFrom: string;
+  dataTo: string;
+  up: DirectionStats;
+  down: DirectionStats;
+  totalLegs: number;
+  /** date dei segnali estratti secondo i criteri della richiesta */
+  signals: string[];
+  /** ultime fasi in ordine cronologico, per ispezione */
+  recentLegs: Leg[];
+};
+
+/**
+ * Segmenta la serie in fasi alternate di massimi e minimi crescenti/decrescenti
+ * ed estrae le date in cui una fase raggiunge il conteggio richiesto.
+ */
+export async function runSwingAnalysis(req: SwingRequest): Promise<SwingResponse> {
+  const { info, series } = await getDataset(req.symbol);
+
+  const legs = buildLegs(series, { from: req.from, to: req.to, outside: req.outside });
+
+  return {
+    symbol: info.symbol,
+    label: info.label,
+    dataFrom: series.date[0],
+    dataTo: series.date[series.date.length - 1],
+    up: summarizeDirection(legs, "up"),
+    down: summarizeDirection(legs, "down"),
+    totalLegs: legs.length,
+    signals: extractSignals(legs, {
+      direction: req.signalDirection,
+      atCount: Math.max(1, Math.round(req.atCount)),
+      minPrevLegCount: Math.max(0, Math.round(req.minPrevLegCount)),
+    }),
+    // le fasi possono essere migliaia: ne inviamo solo la coda, con le date
+    // degli estremi alleggerite per non gonfiare la risposta
+    recentLegs: legs.slice(-40).map((l) => ({ ...l, extremeDates: [] })),
+  };
 }
 
 export type GapResponse = {

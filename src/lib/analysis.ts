@@ -150,6 +150,29 @@ export const DEFAULT_GAP_REQUEST: GapRequest = {
   edges: [0, 0.001, 0.0025, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.03],
 };
 
+export type SwingRequest = {
+  symbol: string;
+  from?: string;
+  to?: string;
+  /** come trattare le barre esterne, che formano entrambi gli estremi */
+  outside: "flip" | "keep";
+  /** direzione della fase da cui estrarre le date */
+  signalDirection: "up" | "down";
+  /** la fase deve raggiungere questo numero di barre con estremo */
+  atCount: number;
+  /** la fase opposta precedente deve averne raggiunte almeno tante; 0 = nessun vincolo */
+  minPrevLegCount: number;
+};
+
+export const DEFAULT_SWING_REQUEST: SwingRequest = {
+  symbol: "SPX",
+  from: "2000-01-01",
+  outside: "flip",
+  signalDirection: "up",
+  atCount: 4,
+  minPrevLegCount: 4,
+};
+
 export type Preset = {
   id: string;
   label: string;
