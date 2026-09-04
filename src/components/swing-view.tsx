@@ -8,6 +8,8 @@ import type { DirectionStats, Leg } from "@/lib/backtest/swings";
 import type { SymbolInfo } from "@/lib/data";
 import { count, pct, points as fmtPoints, shortDate } from "@/lib/format";
 
+import { ResidualPanel } from "./residual-panel";
+
 const UP = "var(--up)";
 const DOWN = "var(--down)";
 
@@ -381,6 +383,13 @@ export function SwingView({ symbols }: { symbols: SymbolInfo[] }) {
                   <DirectionTable s={data.down} tone={DOWN} />
                 </Panel>
               </div>
+
+              <ResidualPanel
+                symbol={request.symbol}
+                from={request.from}
+                to={request.to}
+                outside={request.outside}
+              />
 
               <Panel
                 title="Ultime fasi"

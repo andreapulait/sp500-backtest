@@ -26,6 +26,8 @@ export type Leg = {
   count: number;
   /** date di quelle barre, in ordine */
   extremeDates: string[];
+  /** indici di serie delle stesse barre: servono a misurare i residui */
+  extremeIndices: number[];
   /** barre interne che non hanno formato alcun estremo e non hanno chiuso la fase */
   neutralBars: number;
   /** chiusura della barra precedente all'avvio: riferimento per l'escursione */
@@ -75,6 +77,7 @@ export function buildLegs(
     endDate: series.date[i],
     count: 1,
     extremeDates: [series.date[i]],
+    extremeIndices: [i],
     neutralBars: 0,
     startRef: series.c[i - 1],
     endPrice: series.c[i],
@@ -89,6 +92,7 @@ export function buildLegs(
     leg.endIndex = i;
     leg.endDate = series.date[i];
     leg.extremeDates.push(series.date[i]);
+    leg.extremeIndices.push(i);
     leg.endPrice = series.c[i];
     leg.movePct = series.c[i] / leg.startRef - 1;
     leg.extremePrice =

@@ -16,6 +16,7 @@ import {
   summarizeGaps,
   type GapPeriodStats,
 } from "@/lib/backtest/gaps";
+import { buildResidualRows, type ResidualRow } from "@/lib/backtest/residuals";
 import {
   buildLegs,
   extractSignals,
@@ -79,6 +80,36 @@ export async function runSwingAnalysis(req: SwingRequest): Promise<SwingResponse
     // le fasi possono essere migliaia: ne inviamo solo la coda, con le date
     // degli estremi alleggerite per non gonfiare la risposta
     recentLegs: legs.slice(-40).map((l) => ({ ...l, extremeDates: [] })),
+  };
+}
+
+export type ResidualRequest = {
+  symbol: string;
+  from?: string;
+  to?: string;
+  outside: "flip" | "keep";
+  direction: "up" | "down";
+};
+
+export type ResidualResponse = {
+  symbol: string;
+  direction: "up" | "down";
+  rows: ResidualRow[];
+};
+
+/**
+ * Quanto si muove ancora il prezzo dopo l'N-esimo estremo consecutivo, e in
+ * quanto tempo. Calcolato separatamente dalla segmentazione per non gonfiare
+ * la risposta principale: i livelli annidati portano anche le singole occorrenze.
+ */
+export async function runResidualAnalysis(req: ResidualRequest): Promise<ResidualResponse> {
+  const { info, series } = await getDataset(req.symbol);
+  const legs = buildLegs(series, { from: req.from, to: req.to, outside: req.outside });
+
+  return {
+    symbol: info.symbol,
+    direction: req.direction,
+    rows: buildResidualRows(series, legs, req.direction),
   };
 }
 
