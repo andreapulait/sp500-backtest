@@ -150,9 +150,33 @@ export type LegCountRow = {
    * quarto massimo, quante volte ne e' arrivato un quinto.
    */
   continuationRate: number;
+  /**
+   * Intervallo di Wilson al 95% sul tasso di prosecuzione. Serve a non leggere
+   * come segnale quello che e' rumore: alle lunghezze rare il campione scende a
+   * poche unita' e il tasso puntuale diventa privo di significato.
+   */
+  continuationLow: number;
+  continuationHigh: number;
   /** escursione mediana dall'avvio della fase, per le fasi che arrivano qui */
   medianMovePct: number;
 };
+
+/**
+ * Intervallo di confidenza di Wilson per una proporzione.
+ * Preferito a quello normale perche' resta sensato con campioni piccoli e con
+ * proporzioni vicine a 0 o a 1, che qui sono la norma nelle code.
+ */
+export function wilsonInterval(successes: number, trials: number, z = 1.96): [number, number] {
+  if (trials <= 0) return [0, 0];
+
+  const p = successes / trials;
+  const z2 = z * z;
+  const denom = trials + z2;
+  const center = (successes + z2 / 2) / denom;
+  const half = (z / denom) * Math.sqrt((p * (1 - p) * trials) + z2 / 4);
+
+  return [Math.max(0, center - half), Math.min(1, center + half)];
+}
 
 export type DirectionStats = {
   direction: LegDirection;
@@ -181,12 +205,16 @@ export function summarizeDirection(all: Leg[], direction: LegDirection): Directi
     const ended = legs.filter((l) => l.count === c).length;
     const next = legs.filter((l) => l.count >= c + 1).length;
 
+    const [low, high] = wilsonInterval(next, reached);
+
     rows.push({
       count: c,
       ended,
       reached,
       share: n > 0 ? ended / n : 0,
       continuationRate: reached > 0 ? next / reached : 0,
+      continuationLow: low,
+      continuationHigh: high,
       medianMovePct: quantile(
         reachedLegs.map((l) => Math.abs(l.movePct)).sort((a, b) => a - b),
         0.5

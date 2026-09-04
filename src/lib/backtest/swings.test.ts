@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildLegs, extractSignals, summarizeDirection } from "./swings";
+import { buildLegs, extractSignals, summarizeDirection, wilsonInterval } from "./swings";
 import type { Series } from "./types";
 
 /** Costruisce una serie da barre high/low esplicite; il close sta a meta' barra. */
@@ -157,6 +157,50 @@ describe("statistiche per direzione", () => {
   it("il numero di fasi che raggiungono N non cresce mai", () => {
     for (let i = 1; i < stats.rows.length; i++) {
       expect(stats.rows[i].reached).toBeLessThanOrEqual(stats.rows[i - 1].reached);
+    }
+  });
+});
+
+describe("intervallo di Wilson", () => {
+  it("si stringe al crescere del campione", () => {
+    const small = wilsonInterval(14, 20); // 70% su 20 osservazioni
+    const large = wilsonInterval(700, 1000); // 70% su 1000
+    expect(small[1] - small[0]).toBeGreaterThan(large[1] - large[0]);
+    expect(large[1] - large[0]).toBeLessThan(0.07);
+  });
+
+  it("su 20 osservazioni il 70% resta compatibile col 55%", () => {
+    const [low, high] = wilsonInterval(14, 20);
+    expect(low).toBeLessThan(0.55);
+    expect(high).toBeGreaterThan(0.55);
+    expect(low).toBeCloseTo(0.481, 2);
+    expect(high).toBeCloseTo(0.855, 2);
+  });
+
+  it("resta dentro [0,1] anche agli estremi", () => {
+    const certain = wilsonInterval(1, 1);
+    expect(certain[1]).toBeLessThanOrEqual(1);
+    expect(certain[0]).toBeLessThan(0.5); // una sola osservazione non prova nulla
+
+    const none = wilsonInterval(0, 1);
+    expect(none[0]).toBeGreaterThanOrEqual(0);
+    expect(none[1]).toBeGreaterThan(0.5);
+  });
+
+  it("restituisce un intervallo nullo senza osservazioni", () => {
+    expect(wilsonInterval(0, 0)).toEqual([0, 0]);
+  });
+
+  it("contiene sempre la proporzione osservata", () => {
+    for (const [k, n] of [
+      [14, 20],
+      [20, 37],
+      [788, 1417],
+      [1, 2],
+    ]) {
+      const [low, high] = wilsonInterval(k, n);
+      expect(k / n).toBeGreaterThanOrEqual(low);
+      expect(k / n).toBeLessThanOrEqual(high);
     }
   });
 });

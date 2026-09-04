@@ -34,8 +34,15 @@ function Panel({
   );
 }
 
+/**
+ * Sotto questa soglia il tasso di prosecuzione ha un intervallo di confidenza
+ * cosi' largo da non essere leggibile come segnale: la riga viene attenuata.
+ */
+const MIN_RELIABLE_SAMPLE = 30;
+
 function DirectionTable({ s, tone }: { s: DirectionStats; tone: string }) {
   const maxReached = s.rows[0]?.reached ?? 1;
+  const thin = s.rows.filter((r) => r.reached < MIN_RELIABLE_SAMPLE).length;
 
   return (
     <div>
@@ -56,36 +63,60 @@ function DirectionTable({ s, tone }: { s: DirectionStats; tone: string }) {
             <th className="pb-1 text-left font-normal" />
             <th className="pb-1 text-right font-normal">finite qui</th>
             <th className="pb-1 text-right font-normal">prosegue</th>
+            <th className="pb-1 text-right font-normal">intervallo 95%</th>
             <th className="pb-1 text-right font-normal">escurs. mediana</th>
           </tr>
         </thead>
         <tbody>
-          {s.rows.map((r) => (
-            <tr key={r.count} className="border-t border-[var(--line)]">
-              <td className="num py-1 pr-2">{r.count}</td>
-              <td className="num py-1 text-right">{count(r.reached)}</td>
-              <td className="py-1 pl-2 pr-3 w-[120px]">
-                <span
-                  className="block h-1.5 rounded-sm"
-                  style={{
-                    width: `${Math.max(1, (r.reached / maxReached) * 100)}%`,
-                    background: tone,
-                    opacity: 0.75,
-                  }}
-                />
-              </td>
-              <td className="num py-1 text-right text-[var(--muted)]">{pct(r.share, 1)}</td>
-              <td
-                className="num py-1 text-right"
-                style={{ color: r.continuationRate >= 0.5 ? tone : "var(--text)" }}
+          {s.rows.map((r) => {
+            const reliable = r.reached >= MIN_RELIABLE_SAMPLE;
+            return (
+              <tr
+                key={r.count}
+                className="border-t border-[var(--line)]"
+                style={{ opacity: reliable ? 1 : 0.45 }}
+                title={
+                  reliable
+                    ? undefined
+                    : `Solo ${r.reached} osservazioni: il tasso puntuale non è interpretabile`
+                }
               >
-                {pct(r.continuationRate, 1)}
-              </td>
-              <td className="num py-1 text-right text-[var(--muted)]">{pct(r.medianMovePct)}</td>
-            </tr>
-          ))}
+                <td className="num py-1 pr-2">{r.count}</td>
+                <td className="num py-1 text-right">{count(r.reached)}</td>
+                <td className="py-1 pl-2 pr-3 w-[120px]">
+                  <span
+                    className="block h-1.5 rounded-sm"
+                    style={{
+                      width: `${Math.max(1, (r.reached / maxReached) * 100)}%`,
+                      background: tone,
+                      opacity: 0.75,
+                    }}
+                  />
+                </td>
+                <td className="num py-1 text-right text-[var(--muted)]">{pct(r.share, 1)}</td>
+                <td
+                  className="num py-1 text-right"
+                  style={{ color: reliable ? tone : "var(--faint)" }}
+                >
+                  {pct(r.continuationRate, 1)}
+                </td>
+                <td className="num py-1 text-right text-[11px] text-[var(--faint)]">
+                  {pct(r.continuationLow, 0)}–{pct(r.continuationHigh, 0)}
+                </td>
+                <td className="num py-1 text-right text-[var(--muted)]">{pct(r.medianMovePct)}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
+
+      {thin > 0 && (
+        <p className="mt-2 text-[11px] leading-snug text-[var(--faint)]">
+          Le {thin} righe attenuate poggiano su meno di {MIN_RELIABLE_SAMPLE} osservazioni:
+          l&apos;intervallo di confidenza è così largo da renderle non interpretabili. Un 100% su
+          una sola fase non significa nulla.
+        </p>
+      )}
     </div>
   );
 }
@@ -342,7 +373,7 @@ export function SwingView({ symbols }: { symbols: SymbolInfo[] }) {
               <div className="grid gap-3 xl:grid-cols-2">
                 <Panel
                   title="Fasi di massimi"
-                  note="«prosegue» è la probabilità storica che una fase arrivata a quel numero di barre ne aggiunga almeno un'altra."
+                  note="«prosegue» è la probabilità storica che una fase arrivata a quel numero di barre ne aggiunga almeno un'altra. Se resta piatta al crescere delle barre, il processo è privo di memoria: contare gli estremi consecutivi non aiuta a prevedere l'inversione."
                 >
                   <DirectionTable s={data.up} tone={UP} />
                 </Panel>
