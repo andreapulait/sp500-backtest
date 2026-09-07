@@ -72,8 +72,14 @@ la velocità dell'avanzamento, circa un terzo di punto percentuale per seduta.
 
 Per ogni lunghezza di fase l'app riporta quante fasi la raggiungono, quante si fermano lì, e
 soprattutto la **probabilità di prosecuzione**: dato che siamo alla quarta barra, quante volte ne è
-arrivata una quinta. Su SPX dal 2000 emerge un'asimmetria netta — le fasi rialziste hanno lunghezza
-mediana 2 e proseguono nel 55% dei casi, quelle ribassiste mediana 1 e proseguono nel 46%.
+arrivata una quinta. Con soglia 1, su SPX dal 2000, emerge un'asimmetria netta — le fasi rialziste
+hanno lunghezza mediana 2 e proseguono nel 55% dei casi, quelle ribassiste mediana 1 e proseguono nel
+46%. Il tasso resta piatto al crescere delle barre: il processo è privo di memoria, quindi contare
+gli estremi consecutivi non aiuta a prevedere l'inversione.
+
+**Il valore predefinito della soglia è 4**, che riproduce gli swing di ampio respiro usati
+comunemente nell'analisi manuale. Per la regola stretta, che spezza la fase al primo estremo
+contrario, basta riportarla a 1.
 
 Un estrattore produce le **date ISO** in cui una fase raggiunge un conteggio scelto, con la
 condizione opzionale che la fase opposta precedente ne abbia raggiunte almeno altrettante.
