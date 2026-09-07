@@ -49,6 +49,27 @@ barre che formano un nuovo massimo (`high > high precedente`) e termina quando i
 che forma un nuovo minimo; da lì parte la fase ribassista, e così via. Le barre interne — che non
 superano né il massimo né il minimo precedente — non contano e **non interrompono** la fase.
 
+**La chiusura della fase è parametrica.** Due campi indicano quanti estremi contrari *consecutivi*
+servono a chiuderla: minimi per il rialzo, massimi per il ribasso. Con 1 e 1 vale la regola stretta;
+alzandoli le fasi sopravvivono ai ritracciamenti isolati e diventano swing di ampio respiro. Il
+conteggio è consecutivo e non cumulativo — una soglia cumulativa chiuderebbe da sola qualunque
+salita abbastanza lunga, accumulando giornate storte sparse.
+
+Su SPX dal 2000 il parametro sposta tutto di un ordine di grandezza, e il residuo misurato dal
+quarto massimo lo segue:
+
+| soglia | fasi | lunghezza mediana | residuo dal 4° max | sedute |
+|---|---|---|---|---|
+| 1 | 1.417 | 2 | 0,15% | 1 |
+| 2 | 538 | 4 | 0,71% | 3 |
+| 3 | 248 | 8 | 2,04% | 9 |
+| 4 | 99 | 19 | 4,34% | 28 |
+| 5 | 47 | 30 | 7,77% | 59 |
+
+Non esiste quindi una risposta unica a «quanto sale ancora»: la soglia va scelta in base
+all'orizzonte della struttura che si sta costruendo. Ciò che resta stabile al variare della soglia è
+la velocità dell'avanzamento, circa un terzo di punto percentuale per seduta.
+
 Per ogni lunghezza di fase l'app riporta quante fasi la raggiungono, quante si fermano lì, e
 soprattutto la **probabilità di prosecuzione**: dato che siamo alla quarta barra, quante volte ne è
 arrivata una quinta. Su SPX dal 2000 emerge un'asimmetria netta — le fasi rialziste hanno lunghezza

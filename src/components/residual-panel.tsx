@@ -159,11 +159,15 @@ export function ResidualPanel({
   from,
   to,
   outside,
+  closeUpAfter,
+  closeDownAfter,
 }: {
   symbol: string;
   from?: string;
   to?: string;
   outside: "flip" | "keep";
+  closeUpAfter: number;
+  closeDownAfter: number;
 }) {
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [reference, setReference] = useState<ResidualReference>("close");
@@ -179,7 +183,16 @@ export function ResidualPanel({
     setPending(true);
 
     const timer = setTimeout(() => {
-      runResidualAnalysis({ symbol, from, to, outside, direction, reference })
+      runResidualAnalysis({
+        symbol,
+        from,
+        to,
+        outside,
+        closeUpAfter,
+        closeDownAfter,
+        direction,
+        reference,
+      })
         .then((res) => {
           if (seq.current !== id) return;
           setData(res);
@@ -190,7 +203,7 @@ export function ResidualPanel({
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [symbol, from, to, outside, direction, reference]);
+  }, [symbol, from, to, outside, closeUpAfter, closeDownAfter, direction, reference]);
 
   const tone = direction === "up" ? UP : DOWN;
   const verb = direction === "up" ? "sale" : "scende";

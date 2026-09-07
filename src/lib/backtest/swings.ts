@@ -30,6 +30,8 @@ export type Leg = {
   extremeIndices: number[];
   /** barre interne che non hanno formato alcun estremo e non hanno chiuso la fase */
   neutralBars: number;
+  /** barre che hanno formato l'estremo contrario senza pero' chiudere la fase */
+  oppositeBars: number;
   /** chiusura della barra precedente all'avvio: riferimento per l'escursione */
   startRef: number;
   /** chiusura dell'ultima barra con estremo */
@@ -57,11 +59,28 @@ const classify = (series: Series, i: number): Bar => ({
  * e cosi' via. Le barre interne — che non superano ne' il massimo ne' il minimo
  * precedente — non contano e non interrompono la fase.
  */
-export function buildLegs(
-  series: Series,
-  opts: { from?: string; to?: string; outside?: OutsideMode } = {}
-): Leg[] {
+export type BuildLegsOptions = {
+  from?: string;
+  to?: string;
+  outside?: OutsideMode;
+  /**
+   * Minimi consecutivi necessari per chiudere una fase rialzista, e massimi
+   * consecutivi per chiudere una ribassista.
+   *
+   * Con 1 e 1 la fase termina al primo estremo contrario: e' la regola stretta.
+   * Alzandoli la fase sopravvive ai ritracciamenti isolati, avvicinandosi agli
+   * swing di ampio respiro. Il conteggio e' consecutivo, non cumulativo: una
+   * soglia cumulativa chiuderebbe da sola qualunque salita abbastanza lunga,
+   * accumulando giornate storte sparse, e non misurerebbe piu' la struttura.
+   */
+  closeUpAfter?: number;
+  closeDownAfter?: number;
+};
+
+export function buildLegs(series: Series, opts: BuildLegsOptions = {}): Leg[] {
   const outside = opts.outside ?? "flip";
+  const closeUpAfter = Math.max(1, Math.round(opts.closeUpAfter ?? 1));
+  const closeDownAfter = Math.max(1, Math.round(opts.closeDownAfter ?? 1));
   const first = Math.max(1, indexAtOrAfter(series.date, opts.from));
   const last = indexAtOrBefore(series.date, opts.to);
   if (last <= first) return [];
@@ -79,6 +98,7 @@ export function buildLegs(
     extremeDates: [series.date[i]],
     extremeIndices: [i],
     neutralBars: 0,
+    oppositeBars: 0,
     startRef: series.c[i - 1],
     endPrice: series.c[i],
     movePct: series.c[i] / series.c[i - 1] - 1,
@@ -107,6 +127,20 @@ export function buildLegs(
     legs.push(leg);
   };
 
+  /**
+   * Apre la fase opposta partendo dal primo estremo della sequenza che l'ha
+   * innescata: quelle barre appartengono gia' al nuovo movimento, non alla
+   * fase appena chiusa.
+   */
+  const openFromStreak = (direction: LegDirection, streak: number[]): Leg => {
+    const leg = openLeg(direction, streak[0]);
+    for (const j of streak.slice(1)) extend(leg, j);
+    return leg;
+  };
+
+  // estremi contrari consecutivi accumulati contro la fase in corso
+  let streak: number[] = [];
+
   for (let i = first; i <= last; i++) {
     const { isHigh, isLow } = classify(series, i);
 
@@ -119,18 +153,30 @@ export function buildLegs(
 
     const opposite = current.direction === "up" ? isLow : isHigh;
     const same = current.direction === "up" ? isHigh : isLow;
-    // in modalita' "keep" una barra esterna prosegue la fase invece di ribaltarla
-    const flips = opposite && (outside === "flip" || !same);
+    // in modalita' "keep" una barra esterna prosegue la fase invece di contrastarla
+    const counts = opposite && (outside === "flip" || !same);
+    const needed = current.direction === "up" ? closeUpAfter : closeDownAfter;
 
-    if (flips) {
-      finish(current);
-      current = openLeg(current.direction === "up" ? "down" : "up", i);
-    } else if (same) {
-      extend(current, i);
-    } else {
-      current.neutralBars++;
+    if (counts) {
+      streak.push(i);
+      if (streak.length >= needed) {
+        finish(current);
+        // le barre della sequenza appartengono alla nuova fase, non alla vecchia
+        current = openFromStreak(current.direction === "up" ? "down" : "up", streak);
+        streak = [];
+      }
+      continue;
     }
+
+    // qualunque barra non contraria spezza la sequenza: la soglia e' consecutiva
+    current.oppositeBars += streak.length;
+    streak = [];
+
+    if (same) extend(current, i);
+    else current.neutralBars++;
   }
+
+  if (current) current.oppositeBars += streak.length;
 
   if (current) {
     current.extremeMovePct = current.extremePrice / current.startRef - 1;

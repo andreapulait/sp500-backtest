@@ -66,7 +66,13 @@ export type SwingResponse = {
 export async function runSwingAnalysis(req: SwingRequest): Promise<SwingResponse> {
   const { info, series } = await getDataset(req.symbol);
 
-  const legs = buildLegs(series, { from: req.from, to: req.to, outside: req.outside });
+  const legs = buildLegs(series, {
+    from: req.from,
+    to: req.to,
+    outside: req.outside,
+    closeUpAfter: req.closeUpAfter,
+    closeDownAfter: req.closeDownAfter,
+  });
 
   return {
     symbol: info.symbol,
@@ -92,6 +98,8 @@ export type ResidualRequest = {
   from?: string;
   to?: string;
   outside: "flip" | "keep";
+  closeUpAfter: number;
+  closeDownAfter: number;
   direction: "up" | "down";
   /** da quale prezzo della barra osservata si misura il residuo */
   reference: ResidualReference;
@@ -111,7 +119,13 @@ export type ResidualResponse = {
  */
 export async function runResidualAnalysis(req: ResidualRequest): Promise<ResidualResponse> {
   const { info, series } = await getDataset(req.symbol);
-  const legs = buildLegs(series, { from: req.from, to: req.to, outside: req.outside });
+  const legs = buildLegs(series, {
+    from: req.from,
+    to: req.to,
+    outside: req.outside,
+    closeUpAfter: req.closeUpAfter,
+    closeDownAfter: req.closeDownAfter,
+  });
 
   return {
     symbol: info.symbol,

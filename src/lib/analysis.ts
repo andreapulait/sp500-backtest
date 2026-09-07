@@ -156,6 +156,10 @@ export type SwingRequest = {
   to?: string;
   /** come trattare le barre esterne, che formano entrambi gli estremi */
   outside: "flip" | "keep";
+  /** minimi consecutivi necessari a chiudere una fase rialzista */
+  closeUpAfter: number;
+  /** massimi consecutivi necessari a chiudere una fase ribassista */
+  closeDownAfter: number;
   /** direzione della fase da cui estrarre le date */
   signalDirection: "up" | "down";
   /** la fase deve raggiungere questo numero di barre con estremo */
@@ -168,6 +172,8 @@ export const DEFAULT_SWING_REQUEST: SwingRequest = {
   symbol: "SPX",
   from: "2000-01-01",
   outside: "flip",
+  closeUpAfter: 1,
+  closeDownAfter: 1,
   signalDirection: "up",
   atCount: 4,
   minPrevLegCount: 4,

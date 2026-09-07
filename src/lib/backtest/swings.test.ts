@@ -90,6 +90,89 @@ describe("segmentazione in fasi", () => {
   });
 });
 
+describe("soglia di chiusura della fase", () => {
+  // salita interrotta da minimi isolati, mai due di fila
+  const isolati = makeSeries([
+    { h: 10, l: 9 },
+    { h: 11, l: 10 }, // massimo 1
+    { h: 10.5, l: 9.5 }, // minimo isolato
+    { h: 12, l: 10 }, // massimo 2
+    { h: 11.5, l: 9.8 }, // minimo isolato
+    { h: 13, l: 10.5 }, // massimo 3
+  ]);
+
+  it("con soglia 1 ogni minimo chiude la fase", () => {
+    const legs = buildLegs(isolati, { closeUpAfter: 1 });
+    expect(legs.map((l) => l.direction)).toEqual(["up", "down", "up", "down", "up"]);
+  });
+
+  it("con soglia 2 i minimi isolati non chiudono nulla", () => {
+    const legs = buildLegs(isolati, { closeUpAfter: 2 });
+    expect(legs.length).toBe(1);
+    expect(legs[0].direction).toBe("up");
+    expect(legs[0].count).toBe(3);
+    expect(legs[0].oppositeBars).toBe(2);
+  });
+
+  // tre minimi consecutivi: con soglia 4 non bastano
+  const treConsecutivi = makeSeries([
+    { h: 10, l: 9 },
+    { h: 11, l: 10 }, // massimo 1
+    { h: 12, l: 11 }, // massimo 2
+    { h: 11.5, l: 10.5 }, // minimo 1
+    { h: 11.2, l: 10.2 }, // minimo 2
+    { h: 11.1, l: 10.0 }, // minimo 3
+    { h: 13, l: 10.4 }, // massimo: la salita riprende
+  ]);
+
+  it("tre minimi consecutivi non chiudono una fase con soglia 4", () => {
+    const legs = buildLegs(treConsecutivi, { closeUpAfter: 4 });
+    expect(legs.length).toBe(1);
+    expect(legs[0].direction).toBe("up");
+    expect(legs[0].count).toBe(3); // i tre massimi, il terzo dopo il ritracciamento
+    expect(legs[0].oppositeBars).toBe(3);
+  });
+
+  it("con soglia 3 gli stessi tre minimi la chiudono", () => {
+    const legs = buildLegs(treConsecutivi, { closeUpAfter: 3 });
+    expect(legs.map((l) => l.direction)).toEqual(["up", "down", "up"]);
+    expect(legs[0].count).toBe(2);
+    // la fase ribassista parte dal primo minimo della sequenza, non dal terzo
+    expect(legs[1].startDate).toBe(treConsecutivi.date[3]);
+    expect(legs[1].count).toBe(3);
+  });
+
+  it("la sequenza si azzera se interrotta da una barra non contraria", () => {
+    const spezzata = makeSeries([
+      { h: 10, l: 9 },
+      { h: 11, l: 10 }, // massimo 1
+      { h: 10.8, l: 9.5 }, // minimo 1
+      { h: 10.7, l: 9.4 }, // minimo 2
+      { h: 10.6, l: 9.6 }, // barra interna: spezza la sequenza
+      { h: 10.5, l: 9.3 }, // minimo 1 di una nuova sequenza
+    ]);
+    // con soglia 3 nessuna sequenza arriva a tre: la fase resta rialzista
+    expect(buildLegs(spezzata, { closeUpAfter: 3 }).length).toBe(1);
+    // con soglia 2 la prima coppia consecutiva la chiude
+    expect(buildLegs(spezzata, { closeUpAfter: 2 }).length).toBeGreaterThan(1);
+  });
+
+  it("le due soglie sono indipendenti fra loro", () => {
+    const legs = buildLegs(isolati, { closeUpAfter: 2, closeDownAfter: 1 });
+    expect(legs.length).toBe(1); // nessuna fase ribassista si e' mai aperta
+    const stretta = buildLegs(isolati, { closeUpAfter: 1, closeDownAfter: 2 });
+    // ogni minimo isolato apre una fase ribassista, che pero' serve un solo
+    // massimo per chiudere... con soglia 2 ne servono due consecutivi
+    expect(stretta.filter((l) => l.direction === "down").length).toBeGreaterThan(0);
+  });
+
+  it("con soglia 1 riproduce esattamente il comportamento di default", () => {
+    const conSoglia = buildLegs(isolati, { closeUpAfter: 1, closeDownAfter: 1 });
+    const senza = buildLegs(isolati);
+    expect(conSoglia).toEqual(senza);
+  });
+});
+
 describe("barre esterne", () => {
   const s = makeSeries([
     { h: 10, l: 9 },

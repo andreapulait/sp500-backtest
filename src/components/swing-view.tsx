@@ -267,6 +267,45 @@ export function SwingView({ symbols }: { symbols: SymbolInfo[] }) {
           </div>
 
           <div className="px-3 py-3">
+            <div className="label mb-2">Chiusura della fase</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <label className="block">
+                <span className="label">minimi per chiudere il rialzo</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  className="field mt-0.5 text-right"
+                  value={request.closeUpAfter}
+                  onChange={(e) =>
+                    patch({ closeUpAfter: Math.max(1, Number(e.target.value) || 1) })
+                  }
+                />
+              </label>
+              <label className="block">
+                <span className="label">massimi per chiudere il ribasso</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  className="field mt-0.5 text-right"
+                  value={request.closeDownAfter}
+                  onChange={(e) =>
+                    patch({ closeDownAfter: Math.max(1, Number(e.target.value) || 1) })
+                  }
+                />
+              </label>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-snug text-[var(--faint)]">
+              Estremi contrari <strong>consecutivi</strong> necessari a chiudere la fase. Con{" "}
+              {request.closeUpAfter}, {request.closeUpAfter - 1} minimi di fila non bastano e la
+              salita resta in essere; una barra non contraria azzera la sequenza. Con 1 e 1 vale la
+              regola stretta: basta un estremo opposto. Alzandoli le fasi sopravvivono ai
+              ritracciamenti e si avvicinano agli swing di ampio respiro.
+            </p>
+          </div>
+
+          <div className="px-3 py-3">
             <div className="label mb-2">Barre esterne</div>
             <div className="seg">
               <button
@@ -389,6 +428,8 @@ export function SwingView({ symbols }: { symbols: SymbolInfo[] }) {
                 from={request.from}
                 to={request.to}
                 outside={request.outside}
+                closeUpAfter={request.closeUpAfter}
+                closeDownAfter={request.closeDownAfter}
               />
 
               <Panel
